@@ -1,14 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import {useNavigate, Link, useLocation } from 'react-router-dom'
 import { Menu, X, LayoutDashboard, Users, Briefcase, Bell, ChevronDown, User, LogOut } from 'lucide-react'
 
 export default function AdminLayout({ children }) {
+    const navigate = useNavigate();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
     const profileRef = useRef(null)
     const notifRef = useRef(null)
     const location = useLocation()
+    const user = JSON.parse(sessionStorage.getItem('user'));
+
+    console.log("user :", user)
+
+    const handleLogout = () => {
+        console.log("HH")
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('user');
+        navigate('/');
+    };
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -104,7 +115,7 @@ export default function AdminLayout({ children }) {
                                     AD
                                 </div>
                                 <div className="text-left hidden md:block">
-                                    <p className="text-sm font-semibold text-gray-800">Admin User</p>
+                                    <p className="text-sm font-semibold text-gray-800">{user.fullName}</p>
                                     <p className="text-xs text-gray-500">Administrator</p>
                                 </div>
                                 <ChevronDown size={16} className="text-gray-400" />
@@ -115,7 +126,10 @@ export default function AdminLayout({ children }) {
                                         <User size={18} />
                                         <span>Profile Settings</span>
                                     </button>
-                                    <button className="w-full px-4 py-3 flex items-center gap-3 text-sm text-red-500 hover:bg-red-50 transition-all duration-200">
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="w-full px-4 py-3 flex items-center gap-3 text-sm text-red-500 hover:bg-red-50 transition-all duration-200"
+                                    >
                                         <LogOut size={18} />
                                         <span>Logout</span>
                                     </button>

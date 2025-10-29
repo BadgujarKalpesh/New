@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+// import api from '../../services/api';
 import colors from '../../utils/colors';
 import InputField from '../../components/InputField';
 import Button from '../../components/Button';
@@ -8,33 +8,73 @@ import Button from '../../components/Button';
 function Auth() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [token, setToken] = useState('');
     const [error, setError] = useState('');
+    
+    const [show2FA, setShow2FA] = useState(false);
+    const [tempToken, setTempToken] = useState('');
+    
     const navigate = useNavigate();
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-    // const handleSubmit = async (e) => {
-    //     e.preventDefault();
-    //     setError('');
-    //     setLoading(true);
-    //     try {
-    //         const response = await api.post('/auth/login/', { email, password });
-    //         if (response.data?.token) {
-    //             sessionStorage.setItem('authToken', response.data.token);
-    //             navigate('/dashboard');
-    //         } else {
-    //             setError('Invalid credentials. Please try again.');
-    //         }
-    //     } catch (err) {
-    //         setError(err.response?.data?.detail || 'Login failed. Please try again.');
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
 
-    const handleSubmit = () => {
-        sessionStorage.setItem('authToken', "0000000")
-        navigate('/dashboard')
-    }
+        try {
+            const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.errorMessage || 'Login failed');
+            }
+
+            if (data.data.mfaRequired) {
+                setTempToken(data.data.tempToken);
+                setShow2FA(true);
+            } else {
+                sessionStorage.setItem('accessToken', data.data.accessToken);
+                sessionStorage.setItem('user', JSON.stringify(data.data.user));
+                navigate('/dashboard');
+            }
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    const handleVerify2FA = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+            const response = await fetch(`${apiBaseUrl}/api/auth/2fa/verify`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tempToken}`,
+                },
+                body: JSON.stringify({ token }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.errorMessage || '2FA verification failed');
+            }
+
+            sessionStorage.setItem('accessToken', data.data.accessToken);
+            sessionStorage.setItem('user', JSON.stringify(data.data.user));
+            navigate('/dashboard');
+
+        } catch (err) {
+            setError(err.message);
+        }
+    };
 
     return (
         <div
@@ -45,45 +85,94 @@ function Auth() {
                 className="rounded-2xl shadow-2xl p-8 w-full max-w-md border"
                 style={{ backgroundColor: colors.white, borderColor: colors.border }}
             >
-                <div className="flex flex-col items-center mb-6">
+                
+                 <div className="flex flex-col items-center mb-6">
                     <img src="/darklogo.png" alt="Claritel Logo" className="h-16 mb-2" />
                     <h1 className="text-2xl font-semibold text-gray-800">Welcome Back</h1>
-                    <p className="text-gray-500 text-sm mt-1">Sign in to continue to Claritel Webphone</p>
+                    <p className="text-gray-500 text-sm mt-1">{show2FA ? 'Verify 2FA' : 'Admin Login'}</p>
                 </div>
+                
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <InputField
-                        label="Email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                    />
-                    <InputField
-                        label="Password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                    />
+                {error && (
+                    <div className="p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded-md">
+                        {error}
+                    </div>
+                )}
 
-                    {error && (
-                        <p className="text-sm text-center" style={{ color: colors.error }}>
-                            {error}
+                {!show2FA ? (
+                    <form onSubmit={handleLogin} className="space-y-5" >
+                        <div>
+                            <label 
+                                htmlFor="email" 
+                                className="block text-sm font-medium text-gray-700"
+                            >
+                                Email
+                            </label>
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label 
+                                htmlFor="password" 
+                                className="block text-sm font-medium text-gray-700"
+                            >
+                                Password
+                            </label>
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <Button
+                            type="submit"
+                            label="Login"
+                        />
+                    </form>
+                ) : (
+                    <form className="space-y-6" onSubmit={handleVerify2FA}>
+                        <p className="text-sm text-center text-gray-600">
+                            Enter the 6-digit code from your authenticator app.
                         </p>
-                    )}
-
-                    <Button
-                        type="submit"
-                        label="Login"
-                        loading={loading}
-                        disabled={loading}
-                    />
-                </form>
-
-                <div className="text-center text-sm mt-6" style={{ color: colors.textLight }}>
+                        <div>
+                            <label 
+                                htmlFor="token" 
+                                className="block text-sm font-medium text-gray-700"
+                            >
+                                2FA Token
+                            </label>
+                            <input
+                                id="token"
+                                name="token"
+                                type="text"
+                                required
+                                value={token}
+                                onChange={(e) => setToken(e.target.value)}
+                                className="w-full px-3 py-2 mt-1 text-center border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                maxLength="6"
+                            />
+                        </div>
+                        <Button
+                            type="submit"
+                            label="Verify"
+                            className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        />
+                    </form>
+                )}
+            <div className="text-center text-sm mt-6" style={{ color: colors.textLight }}>
                     © {new Date().getFullYear()} Claritel AI. All rights reserved.
-                </div>
+            </div>
             </div>
         </div>
     );
