@@ -1,12 +1,12 @@
 import React from 'react'
 import AdminLayout from '../../layouts/AdminLayout'
 
-function ManageUsers() {
+function ManageTenants() {
     return (
         <AdminLayout>
-            <div>ManageUsers</div>
+            <div>ManageTenants</div>
         </AdminLayout>
     )
 }
 
-export default ManageUsers
+export default ManageTenants
