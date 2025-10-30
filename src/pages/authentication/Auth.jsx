@@ -40,7 +40,12 @@ function Auth() {
             } else {
                 sessionStorage.setItem('accessToken', data.data.accessToken);
                 sessionStorage.setItem('user', JSON.stringify(data.data.user));
-                navigate('/dashboard');
+
+                if (!data.data.user.mfaEnabled) {
+                    navigate('/setup-2fa');
+                } else {
+                    navigate('/dashboard');
+                }
             }
         } catch (err) {
             setError(err.message);
@@ -86,7 +91,7 @@ function Auth() {
                 style={{ backgroundColor: colors.white, borderColor: colors.border }}
             >
                 
-                 <div className="flex flex-col items-center mb-6">
+                <div className="flex flex-col items-center mb-6">
                     <img src="/darklogo.png" alt="Claritel Logo" className="h-16 mb-2" />
                     <h1 className="text-2xl font-semibold text-gray-800">Welcome Back</h1>
                     <p className="text-gray-500 text-sm mt-1">{show2FA ? 'Verify 2FA' : 'Admin Login'}</p>
@@ -108,14 +113,13 @@ function Auth() {
                             >
                                 Email
                             </label>
-                            <input
+                            <InputField
                                 id="email"
                                 name="email"
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <div>
@@ -125,14 +129,13 @@ function Auth() {
                             >
                                 Password
                             </label>
-                            <input
+                            <InputField
                                 id="password"
                                 name="password"
                                 type="password"
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         <Button
