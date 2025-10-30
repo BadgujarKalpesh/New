@@ -12,7 +12,7 @@ export default function AdminLayout({ children }) {
     const location = useLocation()
     const user = JSON.parse(sessionStorage.getItem('user'));
 
-    console.log("user :", user)
+    // console.log("user :", user)
 
     const handleLogout = () => {
         console.log("HH")
