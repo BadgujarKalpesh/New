@@ -1,23 +1,22 @@
+// src/layouts/AdminLayout.jsx
 import React, { useState, useEffect, useRef } from 'react'
-import {useNavigate, Link, useLocation } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { Menu, X, LayoutDashboard, Users, Briefcase, Bell, ChevronDown, User, LogOut } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { userHasPermission, PERMISSIONS } from '../utils/permissions'
 
 export default function AdminLayout({ children }) {
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
     const profileRef = useRef(null)
     const notifRef = useRef(null)
     const location = useLocation()
-    const user = JSON.parse(sessionStorage.getItem('user'));
-
-    // console.log("user :", user)
 
     const handleLogout = () => {
-        console.log("HH")
-        sessionStorage.removeItem('accessToken');
-        sessionStorage.removeItem('user');
+        logout();
         navigate('/');
     };
 
@@ -30,11 +29,36 @@ export default function AdminLayout({ children }) {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
-    const menuItems = [
-        { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
-        { id: 'users', icon: Users, label: 'Manage Users', to: '/manage-users' },
-        { id: 'tenants', icon: Briefcase, label: 'Manage Tenants', to: '/manage-tenants' }
+    // Define menu items with their permission requirements
+    const allMenuItems = [
+        { 
+            id: 'dashboard', 
+            icon: LayoutDashboard, 
+            label: 'Dashboard', 
+            to: '/dashboard',
+            permission: null // Everyone can see dashboard
+        },
+        { 
+            id: 'users', 
+            icon: Users, 
+            label: 'Manage Users', 
+            to: '/manage-users',
+            permission: null // Everyone can see users (you can change this if needed)
+        },
+        { 
+            id: 'tenants', 
+            icon: Briefcase, 
+            label: 'Manage Tenants', 
+            to: '/manage-tenants',
+            permission: PERMISSIONS.TENANT_MANAGEMENT // Requires tenant.management
+        }
     ]
+
+    // Filter menu items based on permissions
+    const menuItems = allMenuItems.filter(item => {
+        if (!item.permission) return true; // No permission required
+        return userHasPermission(user, item.permission);
+    });
 
     const notifications = [
         { id: 1, text: 'New user registered', time: '5 min ago' },
@@ -112,11 +136,15 @@ export default function AdminLayout({ children }) {
                                 className="flex items-center gap-3 border border-gray-200 rounded-xl bg-white px-2 py-1 hover:bg-gray-50 transition-all duration-200"
                             >
                                 <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#001B80] to-blue-600 flex items-center justify-center text-white font-semibold">
-                                    AD
+                                    {user?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'AD'}
                                 </div>
                                 <div className="text-left hidden md:block">
-                                    <p className="text-sm font-semibold text-gray-800">{user.fullName}</p>
-                                    <p className="text-xs text-gray-500">Administrator</p>
+                                    <p className="text-sm font-semibold text-gray-800">{user?.fullName || 'Administrator'}</p>
+                                    <p className="text-xs text-gray-500">
+                                        {user?.role === 'platform_super_admin' ? 'Platform Admin' : 
+                                         user?.role === 'super_admin' ? 'Super Admin' : 
+                                         'Sub Admin'}
+                                    </p>
                                 </div>
                                 <ChevronDown size={16} className="text-gray-400" />
                             </button>

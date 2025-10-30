@@ -1,5 +1,7 @@
+// src/pages/authentication/TwoFactorSetup.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import colors from '../../utils/colors';
 import Button from '../../components/Button';
 
@@ -12,6 +14,7 @@ function TwoFactorSetup() {
     const [verifying, setVerifying] = useState(false);
     
     const navigate = useNavigate();
+    const { updateUser } = useAuth();
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
     const accessToken = sessionStorage.getItem('accessToken');
 
@@ -71,7 +74,7 @@ function TwoFactorSetup() {
             // Update user object to reflect MFA is now enabled
             const user = JSON.parse(sessionStorage.getItem('user'));
             user.mfaEnabled = true;
-            sessionStorage.setItem('user', JSON.stringify(user));
+            updateUser(user);
 
             navigate('/dashboard');
         } catch (err) {
@@ -91,11 +94,7 @@ function TwoFactorSetup() {
                 style={{ backgroundColor: colors.white, borderColor: colors.border }}
             >
                 <div className="flex flex-col items-center mb-6">
-                    {/* <img src="/darklogo.png" alt="Claritel Logo" className="h-16 mb-2" /> */}
                     <h1 className="text-2xl font-semibold text-gray-800">Setup Two-Factor Authentication</h1>
-                    {/* <p className="text-gray-500 text-sm mt-1 text-center">
-                        Secure your account with 2FA
-                    </p> */}
                 </div>
 
                 {error && (
@@ -125,10 +124,6 @@ function TwoFactorSetup() {
                                     />
                                 )}
                             </div>
-                            {/* <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-                                <p className="text-xs text-gray-600 mb-1 font-medium">Secret Key (manual entry):</p>
-                                <code className="text-xs text-gray-800 font-mono break-all">{secret}</code>
-                            </div> */}
                         </div>
 
                         <form onSubmit={handleVerifySetup} className="space-y-4">
@@ -162,12 +157,6 @@ function TwoFactorSetup() {
                                 disabled={token.length !== 6}
                             />
                         </form>
-
-                        {/* <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                            <p className="text-xs text-blue-800">
-                                <strong>Note:</strong> Save your secret key in a safe place. You'll need it to recover access if you lose your device.
-                            </p>
-                        </div> */}
                     </>
                 )}
 

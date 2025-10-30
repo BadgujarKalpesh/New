@@ -1,6 +1,7 @@
+// src/pages/authentication/Auth.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import colors from '../../utils/colors';
 import InputField from '../../components/InputField';
 import Button from '../../components/Button';
@@ -15,6 +16,7 @@ function Auth() {
     const [tempToken, setTempToken] = useState('');
     
     const navigate = useNavigate();
+    const { login } = useAuth();
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
     const handleLogin = async (e) => {
@@ -38,8 +40,8 @@ function Auth() {
                 setTempToken(data.data.tempToken);
                 setShow2FA(true);
             } else {
-                sessionStorage.setItem('accessToken', data.data.accessToken);
-                sessionStorage.setItem('user', JSON.stringify(data.data.user));
+                // Use the login function from AuthContext
+                login(data.data.user, data.data.accessToken);
 
                 if (!data.data.user.mfaEnabled) {
                     navigate('/setup-2fa');
@@ -72,8 +74,8 @@ function Auth() {
                 throw new Error(data.errorMessage || '2FA verification failed');
             }
 
-            sessionStorage.setItem('accessToken', data.data.accessToken);
-            sessionStorage.setItem('user', JSON.stringify(data.data.user));
+            // Use the login function from AuthContext
+            login(data.data.user, data.data.accessToken);
             navigate('/dashboard');
 
         } catch (err) {
